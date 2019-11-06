@@ -6,10 +6,11 @@
 import cv2
 import argparse
 import os
+from combine_mp4 import combine_mp4
+import multiprocessing
 from multiprocessing import Pool, current_process
-from operator import itemgetter
-from moviepy.editor import VideoFileClip, concatenate_videoclips
-import glob
+# from datetime import datetime
+import datetime
 # from skvideo.io import VideoWriter
 
 
@@ -45,24 +46,32 @@ def image_sort (x,y):
 #     os.system(stringa)
  
 
-
+dir_path='.'
 # arg parser
 argp = argparse.ArgumentParser()
 argp.add_argument("-e","--extension", required=False,default='png',help="extension of photo, default will be 'png'.")
 argp.add_argument("-o","--output",required=False,default='default_out.mp4',help="output video file name default will be 'default_out.mp4' (program will use ffmpeg, so *.mp4).")
+argp.add_argument("-d","--directory",required=False,default='.',help="select directory of images, default is current directory.")
+argp.add_argument("-wi","--width",required=False,default=1920,help="enter width value, default is 1920.")
+argp.add_argument("-hi","--height",required=False,default=1080,help="enter height value, default is 1080.")
 args = vars(argp.parse_args())
-
-# args
-dir_path='.'
+dir_path=args['directory']
 ext=args['extension']
 out=args['output']
+vid_width=args['width']
+vid_height=args['height']
 
 # collect images from current directory
 images=[]
 
+#currently only adds images between specific times.. there are probably better ways to do this but it works OK for now.
+# will need a sophisticated technique eventually
 for f in os.listdir(dir_path):
     if f.endswith(ext):
-        images.append(f)
+        t = os.path.getmtime(os.path.join(dir_path,f))
+        mod_time = datetime.datetime.fromtimestamp(t)
+        if int(mod_time.hour) > 7 and int(mod_time.hour) < 19:
+            images.append(f)
 
 int_name = images[0].split(".")[0]
 if isnum(int_name):
@@ -73,14 +82,18 @@ else:
 
 # print(images)
 # get width/height from first image
-img_path=os.path.join(dir_path,images[0])
-frame=cv2.imread(img_path)
-# cv2.imshow('video',frame)
-height,width,channels=frame.shape
+# img_path=os.path.join(dir_path,images[0])
+# frame=cv2.imread(img_path)
+# # cv2.imshow('video',frame)
+# height,width,channels=frame.shape
+
+# t = os.path.getmtime(img_path)
+# mod_time = datetime.datetime.fromtimestamp(t)
+# print(int(mod_time.hour))
 
 # codec def, change this here if mp4 doesn't work for you
 # use lower case:
-fourcc=cv2.VideoWriter_fourcc(*'mp4v')
+fourcc=cv2.VideoWriter_fourcc(*'h264')
 # fourcc=cv2.VideoWriter_fourcc(*'xvid')
 # fourcc = 0x34363248
 fps=25.0
@@ -88,18 +101,19 @@ fps=25.0
 
 # loop for writing each image to a frame of video.
 # if you were to parallelize this... run this loop on separate images and outputs then combine the outputs.
-images_batches = [images[x:x+100] for x in range(0, len(images), 100)]
+batch_quantity = int(len(images)/multiprocessing.cpu_count())+1 #we want only 10 ish videos
+images_batches = [images[x:x+batch_quantity] for x in range(0, len(images), batch_quantity)]
 videofiles=[]
 def image_adding(image_batch,output_str=''):
-    batch_out=cv2.VideoWriter(str(image_batch[0])+out,fourcc,fps,(1920,1080),True)
-    print("writing img {} + next 100 to video object".format(image_batch[0]))
+    batch_out=cv2.VideoWriter(str(image_batch[0])+out,fourcc,fps,(vid_width,vid_height),True)
+    print("writing img {} + next {} to video object".format(image_batch[0],batch_quantity))
 
     for img in image_batch:
         image_path=os.path.join(dir_path,img)
         # read frame
         frame=cv2.imread(image_path)
         # resize=cv2.resize(oriimg,(1920,1080))
-        batch_out.write(cv2.resize(frame,(1920,1080)))
+        batch_out.write(cv2.resize(frame,(vid_width,vid_height)))
         cv2.waitKey(1)
 
         # frame=cv2.imread(img[1])
@@ -125,34 +139,11 @@ for image_batch in images_batches:
 # print("concatenating...")
 # final_clip = concatenate_videoclips(videofiles)
 # final_clip.write_videofile(out)
-output_write=cv2.VideoWriter(out,fourcc,fps,(1920,1080),True)
+output_write=cv2.VideoWriter(out,fourcc,fps,(vid_width,vid_height),True)
 
-capture= cv2.VideoCapture(videofiles[0])
-video_index=0
+frames = combine_mp4(videofiles)
 
-frames=[]
-
-while(capture.isOpened()):
-    ret, frame = capture.read()
-    if frame is None:
-        print("end of video " + str(video_index) + " .. next one now")
-        video_index += 1
-        if video_index >= len(videofiles):
-            break
-        capture.release()
-        capture = cv2.VideoCapture(videofiles[ video_index ])
-        ret, frame = capture.read()
-        # if not  ret:
-        #     break
-    frames.append(frame)
-
-    # cv2.imshow('frame',frame)
-    # if cv2.waitKey(1) & 0xFF == ord('q'):
-    #     break
-print("...")
-
-capture.release()
-
+print("written")
 for frame in frames:
     output_write.write(frame)
     cv2.waitKey(1)
@@ -187,6 +178,8 @@ output_write.release()
 
 
 for fname in videofiles:
-    os.remove(os.path.join(dir_path, fname))
+    os.remove(os.path.join('.', fname))
 
 print("video output is: {}".format(out))
+
+
