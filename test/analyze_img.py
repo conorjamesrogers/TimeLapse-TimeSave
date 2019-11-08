@@ -1,4 +1,5 @@
 # WHAMSTACK IT 
+# To remove images with certain timestamps (ideally night photography) from directory.
 # By Conor Rogers
 # 2019
 
@@ -9,6 +10,7 @@ from PIL import ExifTags
 from datetime import datetime
 import time
 
+# temp messy paths
 BASEPATH = '../../../Wolff_Contacting_Media/Dennis/'
 TIME_FORMAT='%Y:%m:%d %H:%M:%S'
 
