@@ -133,8 +133,8 @@ def main():
     fps=25.0
 
     if mothership_deploy_flag:
-        for dir in os.listdir(dir_path):
-            print(dir)
+        for d in os.listdir(dir_path):
+            print(d)
     else:
         directory_conversion_video(dir_path,ext,out,fourcc,fps,vid_width,vid_height,time_range)
 
