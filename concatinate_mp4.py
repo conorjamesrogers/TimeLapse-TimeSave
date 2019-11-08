@@ -79,6 +79,10 @@ fps=25.0
 
 output_write=cv2.VideoWriter(out,fourcc,fps,(vid_width,vid_height),True)
 
+if mothership_deploy_flag:
+     for d in os.listdir(dir_path):
+            print(dir)
+
 print(video_file_array)
 combine_mp4(video_file_array,output_write)
 

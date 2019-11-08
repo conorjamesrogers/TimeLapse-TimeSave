@@ -132,11 +132,7 @@ def main():
     # video FPS
     fps=25.0
 
-    if mothership_deploy_flag:
-        for dir in os.listdir(dir_path):
-            print(dir)
-    else:
-        directory_conversion_video(dir_path,ext,out,fourcc,fps,vid_width,vid_height,time_range)
+    directory_conversion_video(dir_path,ext,out,fourcc,fps,vid_width,vid_height,time_range)
 
     #bandaid for creating an h264 encoding video.
     os.system("ffmpeg -i {} -f mp4 -vcodec libx264 -preset fast -profile:v main -acodec aac {} -hide_banner".format(out,'h264_'+out))
