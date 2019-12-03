@@ -6,7 +6,7 @@
 import cv2
 import argparse
 import os
-from concatinate_mp4 import combine_mp4
+# from concatinate_mp4 import combine_mp4
 import multiprocessing
 from multiprocessing import Pool, current_process
 # from datetime import datetime
@@ -25,6 +25,37 @@ def image_sort (x,y):
     x = int(x.split(".")[0])
     y = int(y.split(".")[0])
     return x-y
+
+# combines all mp4's specified in array of directory addresses, then returns an array of frame data.
+def combine_mp4(video_file_array,video_write_object,vid_width=1920,vid_height=1080):
+
+    capture= cv2.VideoCapture(video_file_array[0])
+    video_index=0
+
+    # frames=[]
+
+    while(capture.isOpened()):
+        ret, frame = capture.read()
+        if frame is None:
+            print("end of video " + str(video_index) + " .. next one now")
+            video_index += 1
+            if video_index >= len(video_file_array):
+                break
+            capture.release()
+            capture = cv2.VideoCapture(video_file_array[ video_index ])
+            ret, frame = capture.read()
+            # if not  ret:
+            #     break
+        # frames.append(frame)
+        video_write_object.write(cv2.resize(frame,(vid_width,vid_height)))
+
+        # cv2.imshow('frame',frame)
+        # if cv2.waitKey(1) & 0xFF == ord('q'):
+        #     break
+    print("...")
+
+    capture.release()
+
 
 #collects images in timerange then sorts them, returns sorted filename list
 def collect_img(dir_path,ext,time_range,images=[]):
@@ -120,11 +151,13 @@ def main():
     vid_height=args['height']
     mothership_deploy_flag=args['mothership_deploy']
 
-    if output_overwrite_flag:
-        out =dir_path.split('/')[-2]+'.mp4'
+    # if output_overwrite_flag:
+    #     out =dir_path.split('/')[-2]+'.mp4'
+
+    
 
     # time range to collect images (will be replaced eventually)
-    time_range=(7,19)
+    time_range=(7,20)
    
     # codec def, change this here if mp4 doesn't work for you
     # use lower case:
