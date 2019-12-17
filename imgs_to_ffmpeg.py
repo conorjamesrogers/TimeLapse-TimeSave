@@ -44,6 +44,8 @@ def combine_mp4(video_file_array,video_write_object,vid_width=1920,vid_height=10
     capture= cv2.VideoCapture(video_file_array[0])
     video_index=0
 
+    print(video_file_array[ video_index ].split('/')[-1])
+
 
     while(capture.isOpened()):
         ret, frame = capture.read()
@@ -53,7 +55,7 @@ def combine_mp4(video_file_array,video_write_object,vid_width=1920,vid_height=10
             if video_index >= len(video_file_array):
                 break
             capture.release()
-            capture = cv2.VideoCapture(video_file_array[ video_index ].split('/')[-1])
+            capture = cv2.VideoCapture(video_file_array[ video_index ])
             ret, frame = capture.read()
 
         video_write_object.write(cv2.resize(frame,(vid_width,vid_height)))
@@ -133,12 +135,13 @@ def directory_conversion_video(dir_path,ext,out,fourcc,fps,vid_width,vid_height,
     #populate array with tempfilenames to be erased later...
     videofiles=[]
     for image_batch in images_batches:    
-        videofiles.append(str(image_batch[0][0])+out)
+        videofiles.append(str(image_batch[0][0]).split('/')[-1]+out)
 
     output_write=cv2.VideoWriter(out,fourcc,fps,(vid_width,vid_height),True)
 
     #concatinates all the videos (see concatinate_mp4.py)
     #populates frames=[] with frame objects to be written to master video
+    print(videofiles)
     combine_mp4(videofiles,output_write,vid_width,vid_height)
 
     #erase temp files...
