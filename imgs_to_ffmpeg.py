@@ -2,16 +2,18 @@
 # 'simple' script to convert directroy of imgs to video.
 # By Conor Rogers
 # 2019
+#
+# typical input: python3 imgs_to_ffmpeg.py -ow -e JPG -d <path to folder full of image files>
+# -ow: override output name to be the name of the folder
+# -e: extension of image files (Case Sensitive)
+# -d: path to folder
 
 import cv2
 import argparse
 import os
 import multiprocessing
 from multiprocessing import Pool, current_process
-# import glob
 import datetime
-# import imageio
-# import numpy as np
 from functools import cmp_to_key
 
 
@@ -33,6 +35,7 @@ def image_sort_datetime (x,y):
     return x - y
 
 
+#For sorting images based on light amount (slow)
 # def img_estim(img, thrshld):
 #     is_light = np.mean(img) > thrshld
 #     return is_light
@@ -43,9 +46,6 @@ def combine_mp4(video_file_array,video_write_object,vid_width=1920,vid_height=10
 
     capture= cv2.VideoCapture(video_file_array[0])
     video_index=0
-
-    print(video_file_array[ video_index ].split('/')[-1])
-
 
     while(capture.isOpened()):
         ret, frame = capture.read()
@@ -60,7 +60,7 @@ def combine_mp4(video_file_array,video_write_object,vid_width=1920,vid_height=10
 
         video_write_object.write(cv2.resize(frame,(vid_width,vid_height)))
 
-    print("...")
+    print("combine complete...")
 
     capture.release()
 
@@ -88,11 +88,13 @@ def collect_img(dir_path,ext,time_range,images=[]):
             if int(mod_time.hour) > time_range[0] and int(mod_time.hour) < time_range[1]:
                 images.append(os.path.join(dir_path,f))
     int_name = images[0].split(".")[0]
+
     # if isnum(int_name):
     #     images = sorted(images, key=cmp_to_key(image_sort))
     # else:
     #     print("Failed to sort numerically, switching to alphabetic sort")
     # images.sort()
+
     images = sorted(images, key=cmp_to_key(image_sort_datetime))
     return images
 
@@ -100,13 +102,12 @@ def collect_img(dir_path,ext,time_range,images=[]):
 def image_adding(args):
     image_batch = args[0]
     dir_path,out,fourcc,fps,vid_width,vid_height,batch_quantity = args[1]
-    # batch_out=cv2.VideoWriter(str(image_batch[0])+out,fourcc,fps,(vid_width,vid_height),True)
     batch_out=cv2.VideoWriter(str(image_batch[0].split('/')[-1])+out,fourcc,fps,(vid_width,vid_height),True)
 
     print("writing img {} + next {} to video object".format(image_batch[0].split('/')[-1],batch_quantity))
 
     for img in image_batch:
-        # image_path=os.path.join(dir_path,img)
+
         image_path=img
         # read frame
         frame=cv2.imread(image_path)
@@ -120,6 +121,12 @@ def image_adding(args):
 def directory_conversion_video(dir_path,ext,out,fourcc,fps,vid_width,vid_height,time_range):
      # collect and sort image files from current directory
     images=collect_img(dir_path,ext,time_range)
+
+    #automatically determine video dimensions based on image size:
+    # ***if image is too large, video will not render well!!!!***
+    # frame=cv2.imread(images[0])
+    # vid_height,vid_width,channels=frame.shape
+
     #
     # Parallelizaiton
     #
@@ -141,7 +148,6 @@ def directory_conversion_video(dir_path,ext,out,fourcc,fps,vid_width,vid_height,
 
     #concatinates all the videos (see concatinate_mp4.py)
     #populates frames=[] with frame objects to be written to master video
-    print(videofiles)
     combine_mp4(videofiles,output_write,vid_width,vid_height)
 
     #erase temp files...
@@ -160,6 +166,7 @@ def main():
     argp.add_argument("-wi","--width",required=False,default=1920,help="enter width value, default is 1920.")
     argp.add_argument("-hi","--height",required=False,default=1080,help="enter height value, default is 1080.")
     argp.add_argument("-ow","--overwrite_out",action='store_true',help="name output after directory with .mp4 extension")
+    # argp.add_argument("-c","--combine_mp4",action='store_true',help="for usage of just the combine function.")
     # argp.add_argument("-m","--mothership_deploy",action='store_true',help="convert all directories in given directory to video, then concatinate")
     # argp.add_argument("-st","--start-time",requied=False,default=7,help="Filter images based on time taken, range is ")
     args = vars(argp.parse_args())
@@ -167,12 +174,14 @@ def main():
     ext=args['extension']
     output_overwrite_flag=args['overwrite_out']
     out=args['output']
-    vid_width=args['width']
-    vid_height=args['height']
+    vid_width=int(args['width'])
+    vid_height=int(args['height'])
     # mothership_deploy_flag=args['mothership_deploy']
 
     if output_overwrite_flag:
         out =dir_path.split('/')[-2]+'.mp4'
+
+
 
     # time range to collect images (will be replaced eventually)
     time_range=(8,19)
