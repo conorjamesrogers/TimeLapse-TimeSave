@@ -1,8 +1,3 @@
-# WHAMSTACK IT
-# script to concatinate directroy of videos to video.
-# By Conor Rogers
-# 2019
-
 import cv2
 import os
 from functools import cmp_to_key
@@ -15,7 +10,7 @@ def image_sort_datetime (x,y):
     return x - y
 
 # combines all mp4's specified in array of directory addresses, then returns an array of frame data.
-def combine_mp4(video_file_array,video_write_object):
+def combine_mp4(video_file_array,video_write_object,vid_width=1920,vid_height=1080):
 
     capture= cv2.VideoCapture(video_file_array[0])
     video_index=0
@@ -35,7 +30,7 @@ def combine_mp4(video_file_array,video_write_object):
             # if not  ret:
             #     break
         # frames.append(frame)
-        video_write_object.write(frame)
+        video_write_object.write(cv2.resize(frame,(vid_width,vid_height)))
 
         # cv2.imshow('frame',frame)
         # if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -67,7 +62,7 @@ mothership_deploy_flag=args['mothership_deploy']
 video_file_array = []
 for f in os.listdir(dir_path):
     if f.startswith(strt) and f.endswith(ext):
-        video_file_array.append(dir_path+'/'+f)
+        video_file_array.append(dir_path+f)
 
 video_file_array = sorted(video_file_array,key=cmp_to_key(image_sort_datetime))
 
